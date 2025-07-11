@@ -1,6 +1,6 @@
 # Movie Plot Retrieval Agent
 
-This project implements a semantic search system that retrieves the most relevant movie plot given a natural language query. It compares two retrieval paradigms:
+This project implements a semantic search system that retrieves the most relevant movie plot given a natural language query. It compares these retrieval paradigms:
 
 - **Bi-Encoder (Sentence-BERT)**
     - Uses pretrained SBERT (all-MiniLM-L6-v2).
