@@ -1,0 +1,60 @@
+
+
+import pickle
+import numpy as np
+import faiss
+from sentence_transformers import SentenceTransformer
+import sys
+import os
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
+from scripts.query_agent import smart_rerank  
+
+def load_corpus():
+    with open("embeddings/titles.pkl", "rb") as f:
+        titles = pickle.load(f)
+    with open("embeddings/plots.pkl", "rb") as f:
+        plots = pickle.load(f)
+    return titles, plots
+
+def build_index(embeddings):
+    dim = embeddings.shape[1]
+    index = faiss.IndexFlatL2(dim)
+    index.add(embeddings)
+    return index
+
+def query_agent(query, model, index, titles, plots, top_k=3):
+    query_embedding = model.encode([query])
+    D, I = index.search(np.array(query_embedding).astype('float32'), top_k * 2)
+    results = [(titles[i], plots[i]) for i in I[0]]
+    try:
+        reranked = smart_rerank(results, query, top_k=top_k)
+        return reranked
+    except:
+        return results[:top_k]
+
+def main():
+    print("\n Testing Fine-Tuned SBERT (Semantic Search)")
+    print("Model: finetune/sbert_finetuned")
+    print("Type 'exit' to quit.\n")
+
+    titles, plots = load_corpus()
+
+    # Load fine-tuned SBERT model
+    model = SentenceTransformer("finetune/sbert_finetuned")
+    plot_embeddings = model.encode(plots, show_progress_bar=True)
+    index = build_index(np.array(plot_embeddings).astype('float32'))
+
+    while True:
+        query = input("Your query: ")
+        if query.lower() in ['exit', 'quit']:
+            print(" Goodbye!")
+            break
+
+        results = query_agent(query, model, index, titles, plots)
+        for i, (title, plot) in enumerate(results, 1):
+            print(f"\n{i}. {title}\n{plot[:300]}...\n")
+
+if __name__ == "__main__":
+    main()
