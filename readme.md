@@ -3,9 +3,36 @@
 This project implements a semantic search system that retrieves the most relevant movie plot given a natural language query. It compares two retrieval paradigms:
 
 - **Bi-Encoder (Sentence-BERT)**
-- **CrossEncoder (fine-tuned for classification)**
+  Uses pretrained SBERT (all-MiniLM-L6-v2).
 
-The goal is to evaluate trade-offs between latency and retrieval accuracy using real-world movie plot data.
+    Builds a FAISS index over the corpus (plots.pkl) for fast semantic search.
+
+    Retrieves top-K similar results using cosine similarity in embedding space.
+
+    Re-ranks results using:
+
+    SBERT cosine similarity again (on query and individual plot).
+
+    Noun-overlap score using spaCy.
+
+    Final score = semantic score + 0.2 * noun overlap.
+- **Fine-Tuned SBERT Query with Re-ranking**
+    Uses fine-tuned SBERT trained with MultipleNegativesRankingLoss.
+
+    Encodes movie plots and builds FAISS index once with tuned embeddings.
+
+    Queries are encoded with fine-tuned SBERT, so results better match semantic intent.
+
+    Re-ranks retrieved results using the same smart_rerank logic.
+  
+- **CrossEncoder (fine-tuned for classification)**
+    The CrossEncoder does not precompute embeddings for individual plots.
+
+    Instead, it takes (query, plot) pairs and computes a score for each pair jointly.
+
+    This joint scoring enables fine-grained interaction between the query and the text (e.g., attention across tokens), making it more expressive.
+
+    The goal is to evaluate trade-offs between latency and retrieval accuracy using real-world movie plot data.
 
 ## Project Overview
 
